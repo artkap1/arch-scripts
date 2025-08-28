@@ -1,0 +1,3 @@
+date: #42f5ec, #E56B6F, #4bb3ad, #3ebdb5, #5e81ac, #46c7bf
+language: #E88C7D, #96ebeb
+mic: #EAAC8B
