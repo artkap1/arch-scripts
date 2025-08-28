@@ -18,15 +18,15 @@ const MODULES = [
 		color: '#96ebeb',
 		process: result => result[0] === '1' ? '[Backup]' : ''
 	},
-	// {
-	// 	module: 'batteryConsumtion',
-	// 	command: ``,
-	// 	color: '#96ebeb', 
-	// 	process: result => (`[ ${result} hours ]`)
-	// },
+	{
+		module: 'batteryConsumption',
+		command: `cat /sys/class/power_supply/BAT0/energy_now`,
+		color: '#96ebeb', 
+		process: result => (`[ ${batteryConsumption(result)}/m ]`)
+	},
 	{
 		module: 'battery',
-		command: `cat /sys/class/power_supply/BAT0/capacity`,
+		command: `cat /sys/class/power_supply/BAT0/status`,
 		color: '#96ebeb',
 		process: result => `[ ${result}% ${batteryIcon(Number(result))} ]`
 	},
@@ -51,7 +51,9 @@ const MODULES = [
 	{ module: 'date', command: `date +"%a, %d %b %H:%M"`, color: '#46c7bf' }
 ];
 
-const find_module = module => MODULES.filter(current => current.module === module)[0];
+let prevEnergyNow;
+
+const find_module = (module) => MODULES.filter(current => current.module === module)[0];
 
 const status_bar = async () => {
 	const run_module = async ({ module, command, color, process }) => {
@@ -99,7 +101,7 @@ const status_bar = async () => {
 			minutes = new Date().getMinutes();
 			await run_module(find_module('date'));
 			await run_module(find_module('battery'));
-			// await run_module(find_module('batteryConsumtion'))
+			await run_module(find_module('batteryConsumption'))
 			await update_status_bar();
 		}, 60000 - 500);
 	};
@@ -112,7 +114,7 @@ const status_bar = async () => {
 	refresh_date();
 };
 
-const refresh = module => {
+const refresh = (module) => {
 	if (!MODULES.some(current => current.module === module)) return console.error(`No module ${module}!`);
 
 	const socket = net.createConnection(SOCKET_PATH);
@@ -132,6 +134,25 @@ const batteryIcon = (charge) => {
 		return ' '
 	} else if (charge <= 10){
 		return ' '
+	}
+}
+
+const batteryConsumption = (energyNow) => {
+	energyNow = parseInt(energyNow);
+	let consumption;
+
+	if (!prevEnergyNow) {
+		prevEnergyNow = energyNow;
+		return 0;
+	} else {
+		consumption = energyNow - prevEnergyNow;
+		prevEnergyNow = energyNow;
+
+		if (consumption > 0) {
+			return `+${consumption}`;
+		}
+
+		return consumption;
 	}
 }
 
