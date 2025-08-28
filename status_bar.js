@@ -20,13 +20,13 @@ const MODULES = [
 	},
 	{
 		module: 'batteryConsumption',
-		command: `cat /sys/class/power_supply/BAT0/energy_now`,
+		command: `cat /sys/class/power_supply/BAT0/energy_now && cat /sys/class/power_supply/BAT0/energy_full`,
 		color: '#96ebeb', 
-		process: result => (`[ ${batteryConsumption(result)}/m ]`)
+		process: result => (`[ ${batteryConsumption(result)}%/m ]`)
 	},
 	{
 		module: 'battery',
-		command: `cat /sys/class/power_supply/BAT0/status`,
+		command: `cat /sys/class/power_supply/BAT0/capacity`,
 		color: '#96ebeb',
 		process: result => `[ ${result}% ${batteryIcon(Number(result))} ]`
 	},
@@ -137,9 +137,13 @@ const batteryIcon = (charge) => {
 	}
 }
 
-const batteryConsumption = (energyNow) => {
-	energyNow = parseInt(energyNow);
+const batteryConsumption = (energyNowAndEnergyFull) => {
+	const arr = energyNowAndEnergyFull.split('\n');
+	const energyNow = parseInt(arr[0]);
+	const energyFull = parseInt(arr[1]);
 	let consumption;
+
+	console.log(energyNowAndEnergyFull, arr, energyNow, energyFull);
 
 	if (!prevEnergyNow) {
 		prevEnergyNow = energyNow;
@@ -149,11 +153,15 @@ const batteryConsumption = (energyNow) => {
 		prevEnergyNow = energyNow;
 
 		if (consumption > 0) {
-			return `+${consumption}`;
+			return `+${toPrecent(consumption, energyFull)}`;
 		}
 
-		return consumption;
+		return toPrecent(consumption, energyFull);
 	}
+}
+
+const toPrecent = (value, maxValue) => {
+	return (value * 100.0 / maxValue).toFixed(3);
 }
 
 const main = () => {
